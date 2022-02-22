@@ -1,4 +1,4 @@
-module gitee.com/kordar/goupload
+module github.com/kordar/goupload
 
 go 1.16
 
