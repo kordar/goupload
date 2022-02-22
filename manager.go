@@ -4,43 +4,60 @@ import (
 	"io"
 )
 
-type UploadManager struct {
-	handler IUpload
+type BucketManager struct {
+	bucketHandler map[string]IUpload
 }
 
-func NewUploadManager(handler IUpload) *UploadManager {
+func NewBucketManager(handler IUpload) *BucketManager {
 	handler.CreateBucket()
-	return &UploadManager{handler: handler}
+	return &BucketManager{
+		bucketHandler: map[string]IUpload{
+			handler.GetBucketName(): handler,
+		},
+	}
 }
 
-func (mgr *UploadManager) Buckets() []Bucket {
-	return mgr.handler.Buckets()
+func NewBucketManagers(handlers []IUpload) *BucketManager {
+	manager := &BucketManager{bucketHandler: map[string]IUpload{}}
+	for _, handler := range handlers {
+		handler.CreateBucket()
+		manager.bucketHandler[handler.GetBucketName()] = handler
+	}
+	return manager
 }
 
-func (mgr *UploadManager) PutFromFile(name string, filePath string) error {
-	return mgr.handler.PutFromFile(name, filePath)
+func (mgr *BucketManager) GetHandler(bucketName string) IUpload {
+	return mgr.bucketHandler[bucketName]
 }
 
-func (mgr *UploadManager) Put(name string, fd io.Reader) error {
-	return mgr.handler.Put(name, fd)
+func (mgr *BucketManager) Buckets(bucketName string) []Bucket {
+	return mgr.GetHandler(bucketName).Buckets()
 }
 
-func (mgr *UploadManager) PutString(name string, content string) error {
-	return mgr.handler.PutString(name, content)
+func (mgr *BucketManager) PutFromFile(bucketName string, name string, filePath string) error {
+	return mgr.GetHandler(bucketName).PutFromFile(name, filePath)
 }
 
-func (mgr *UploadManager) List(path string, next string, limit int) BucketResult {
-	return mgr.handler.List(path, next, limit)
+func (mgr *BucketManager) Put(bucketName string, name string, fd io.Reader) error {
+	return mgr.GetHandler(bucketName).Put(name, fd)
 }
 
-func (mgr *UploadManager) Del(name string) error {
-	return mgr.handler.Del(name)
+func (mgr *BucketManager) PutString(bucketName string, name string, content string) error {
+	return mgr.GetHandler(bucketName).PutString(name, content)
 }
 
-func (mgr *UploadManager) Get(name string) ([]byte, error) {
-	return mgr.handler.Get(name)
+func (mgr *BucketManager) List(bucketName string, path string, next string, limit int) BucketResult {
+	return mgr.GetHandler(bucketName).List(path, next, limit)
 }
 
-func (mgr *UploadManager) GetToFile(name string, localPath string) error {
-	return mgr.handler.GetToFile(name, localPath)
+func (mgr *BucketManager) Del(bucketName string, name string) error {
+	return mgr.GetHandler(bucketName).Del(name)
+}
+
+func (mgr *BucketManager) Get(bucketName string, name string) ([]byte, error) {
+	return mgr.GetHandler(bucketName).Get(name)
+}
+
+func (mgr *BucketManager) GetToFile(bucketName string, name string, localPath string) error {
+	return mgr.GetHandler(bucketName).GetToFile(name, localPath)
 }

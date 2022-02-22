@@ -3,6 +3,7 @@ package goupload
 import "io"
 
 type IUpload interface {
+	GetBucketName() string
 	CreateBucket()
 	Buckets() []Bucket
 	PutFromFile(name string, filePath string) error

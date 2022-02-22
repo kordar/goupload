@@ -37,6 +37,11 @@ func NewCOSClient(bucket string, region string, secretId string, secretKey strin
 	return &COSClient{client: client, bucket: bucket, region: region}
 }
 
+// GetBucketName 获取bucket名称
+func (c *COSClient) GetBucketName() string {
+	return c.bucket
+}
+
 // CreateBucket 创建bucket
 func (c *COSClient) CreateBucket() {
 	_, err := c.client.Bucket.Put(context.Background(), nil)
@@ -88,10 +93,10 @@ func (c *COSClient) PutFromFile(name string, filePath string) error {
 // List 获取文件列表
 func (c *COSClient) List(path string, next string, limit int) BucketResult {
 	opt := &cos.BucketGetOptions{
-		Prefix:  path,
+		Prefix:    path,
 		Delimiter: "/",
-		Marker:  next,
-		MaxKeys: limit,
+		Marker:    next,
+		MaxKeys:   limit,
 	}
 
 	v, _, err := c.client.Bucket.Get(context.Background(), opt)
