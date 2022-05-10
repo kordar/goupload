@@ -9,7 +9,6 @@ type BucketManager struct {
 }
 
 func NewBucketManager(handler IUpload) *BucketManager {
-	handler.CreateBucket()
 	return &BucketManager{
 		bucketHandler: map[string]IUpload{
 			handler.GetBucketName(): handler,
@@ -17,10 +16,12 @@ func NewBucketManager(handler IUpload) *BucketManager {
 	}
 }
 
-func NewBucketManagers(handlers []IUpload) *BucketManager {
+func NewBucketManagers(handlers []IUpload, autoCreateBucket bool) *BucketManager {
 	manager := &BucketManager{bucketHandler: map[string]IUpload{}}
 	for _, handler := range handlers {
-		handler.CreateBucket()
+		if autoCreateBucket {
+			handler.CreateBucket()
+		}
 		manager.bucketHandler[handler.GetBucketName()] = handler
 	}
 	return manager
