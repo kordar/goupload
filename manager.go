@@ -1,70 +1,186 @@
 package goupload
 
 import (
+	"context"
+	"fmt"
 	"io"
 )
 
-type BucketManager struct {
-	bucketHandler map[string]IUpload
+type UploaderManager struct {
+	container map[string]BucketUploader
 }
 
-func NewBucketManager() *BucketManager {
-	return &BucketManager{bucketHandler: map[string]IUpload{}}
+func NewManager() *UploaderManager {
+	return &UploaderManager{container: map[string]BucketUploader{}}
 }
 
-func NewBucketManagers(handlers []IUpload, autoCreateBucket bool) *BucketManager {
-	manager := &BucketManager{bucketHandler: map[string]IUpload{}}
+func NewManagerWithUploader(handlers ...BucketUploader) *UploaderManager {
+	manager := &UploaderManager{container: map[string]BucketUploader{}}
 	for _, handler := range handlers {
-		if autoCreateBucket {
-			handler.CreateBucket()
-		}
-		manager.bucketHandler[handler.GetBucketName()] = handler
+		manager.container[handler.BucketName()] = handler
 	}
 	return manager
 }
 
-func (mgr *BucketManager) SetUploadHandlers(handler ...IUpload) {
-	for _, upload := range handler {
-		mgr.bucketHandler[upload.GetBucketName()] = upload
+func (mgr *UploaderManager) Add(uploader ...BucketUploader) {
+	for _, handler := range uploader {
+		mgr.container[handler.BucketName()] = handler
 	}
 }
 
-func (mgr *BucketManager) GetHandler(bucketName string) IUpload {
-	return mgr.bucketHandler[bucketName]
+func (mgr *UploaderManager) GetHandler(bucketName string) BucketUploader {
+	return mgr.container[bucketName]
 }
 
-func (mgr *BucketManager) CreateBucket(bucketName string) {
-	mgr.bucketHandler[bucketName].CreateBucket()
+func (mgr *UploaderManager) Buckets(bucketName string, opt interface{}) []Bucket {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return []Bucket{}
+	}
+	ctx := context.Background()
+	return handler.RemoteBuckets(ctx, opt)
 }
 
-func (mgr *BucketManager) Buckets(bucketName string) []Bucket {
-	return mgr.GetHandler(bucketName).Buckets()
+func (mgr *UploaderManager) PutFromFile(bucketName string, name string, filePath string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.PutFromFile(ctx, name, filePath, opt)
 }
 
-func (mgr *BucketManager) PutFromFile(bucketName string, name string, filePath string) error {
-	return mgr.GetHandler(bucketName).PutFromFile(name, filePath)
+func (mgr *UploaderManager) Put(bucketName string, name string, fd io.Reader, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Put(ctx, name, fd, opt)
 }
 
-func (mgr *BucketManager) Put(bucketName string, name string, fd io.Reader) error {
-	return mgr.GetHandler(bucketName).Put(name, fd)
+func (mgr *UploaderManager) PutString(bucketName string, name string, content string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.PutString(ctx, name, content, opt)
 }
 
-func (mgr *BucketManager) PutString(bucketName string, name string, content string) error {
-	return mgr.GetHandler(bucketName).PutString(name, content)
+func (mgr *UploaderManager) List(bucketName string, path string, next string, limit int, opt interface{}) ([]BucketObject, string) {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return []BucketObject{}, ""
+	}
+	ctx := context.Background()
+	return handler.List(ctx, path, next, limit, opt)
 }
 
-func (mgr *BucketManager) List(bucketName string, path string, next string, limit int) BucketResult {
-	return mgr.GetHandler(bucketName).List(path, next, limit)
+func (mgr *UploaderManager) Del(bucketName string, name string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Del(ctx, name, opt)
 }
 
-func (mgr *BucketManager) Del(bucketName string, name string) error {
-	return mgr.GetHandler(bucketName).Del(name)
+func (mgr *UploaderManager) DelAll(bucketName string, dir string) {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return
+	}
+	ctx := context.Background()
+	mgr.GetHandler(bucketName).DelAll(ctx, dir)
 }
 
-func (mgr *BucketManager) Get(bucketName string, name string) ([]byte, error) {
-	return mgr.GetHandler(bucketName).Get(name)
+func (mgr *UploaderManager) DelMulti(bucketName string, objects []BucketObject) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.DelMulti(ctx, objects)
 }
 
-func (mgr *BucketManager) GetToFile(bucketName string, name string, localPath string) error {
-	return mgr.GetHandler(bucketName).GetToFile(name, localPath)
+func (mgr *UploaderManager) Get(bucketName string, name string, opt interface{}) ([]byte, error) {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return nil, fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Get(ctx, name, opt)
+}
+
+func (mgr *UploaderManager) GetToFile(bucketName string, name string, localPath string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.GetToFile(ctx, name, localPath, opt)
+}
+
+func (mgr *UploaderManager) IsExist(bucketName string, name string) (bool, error) {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return false, fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.IsExist(ctx, name)
+}
+
+func (mgr *UploaderManager) Copy(bucketName string, dest string, source string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Copy(ctx, dest, source, opt)
+}
+
+func (mgr *UploaderManager) Move(bucketName string, dest string, source string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Move(ctx, dest, source, opt)
+}
+
+func (mgr *UploaderManager) Rename(bucketName string, dest string, source string, opt interface{}) error {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Rename(ctx, dest, source, opt)
+}
+
+func (mgr *UploaderManager) Tree(bucketName string, path string, next string, limit int, dep int, maxDep int, noleaf bool) []BucketTreeObject {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return []BucketTreeObject{}
+	}
+	ctx := context.Background()
+	return handler.Tree(ctx, path, next, limit, dep, maxDep, noleaf)
+}
+
+func (mgr *UploaderManager) Append(bucketName string, name string, position int, r io.Reader, opt interface{}) (int, error) {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return -1, fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.Append(ctx, name, position, r, opt)
+}
+
+func (mgr *UploaderManager) AppendString(bucketName string, name string, position int, content string, opt interface{}) (int, error) {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return -1, fmt.Errorf("[goupload-%s] no valid processor found", bucketName)
+	}
+	ctx := context.Background()
+	return handler.AppendString(ctx, name, position, content, opt)
 }
