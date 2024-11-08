@@ -68,13 +68,18 @@ func (mgr *UploaderManager) PutString(bucketName string, name string, content st
 	return handler.PutString(ctx, name, content, args...)
 }
 
-func (mgr *UploaderManager) List(bucketName string, dir string, next interface{}, limit int, args ...interface{}) ([]BucketObject, interface{}) {
+func (mgr *UploaderManager) List(bucketName string, dir string, next interface{}, limit int, subCount bool, args ...interface{}) ([]BucketObject, interface{}) {
 	handler := mgr.GetHandler(bucketName)
 	if handler == nil {
 		return []BucketObject{}, next
 	}
 	ctx := context.Background()
-	return handler.List(ctx, dir, next, limit, args...)
+	return handler.List(ctx, dir, next, limit, subCount, args...)
+}
+
+func (mgr *UploaderManager) Count(ctx context.Context, dir string, args ...interface{}) ([]BucketObject, interface{}) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (mgr *UploaderManager) Del(bucketName string, name string, args ...interface{}) error {
@@ -158,13 +163,13 @@ func (mgr *UploaderManager) Rename(bucketName string, dest string, source string
 	return handler.Rename(ctx, dest, source, args...)
 }
 
-func (mgr *UploaderManager) Tree(bucketName string, path string, next interface{}, limit int, dep int, maxDep int, noleaf bool) []BucketTreeObject {
+func (mgr *UploaderManager) Tree(bucketName string, path string, next interface{}, limit int, dep int, maxDep int, noleaf bool, subCount bool) []BucketTreeObject {
 	handler := mgr.GetHandler(bucketName)
 	if handler == nil {
 		return []BucketTreeObject{}
 	}
 	ctx := context.Background()
-	return handler.Tree(ctx, path, next, limit, dep, maxDep, noleaf)
+	return handler.Tree(ctx, path, next, limit, dep, maxDep, noleaf, subCount)
 }
 
 func (mgr *UploaderManager) Append(bucketName string, name string, position int, r io.Reader, args ...interface{}) (int, error) {

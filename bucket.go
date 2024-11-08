@@ -32,7 +32,10 @@ type BucketUploader interface {
 	PutFromFile(ctx context.Context, name string, filePath string, args ...interface{}) error
 
 	// List retrieves objects within a specified path, with options for pagination (next and limit).
-	List(ctx context.Context, dir string, next interface{}, limit int, args ...interface{}) ([]BucketObject, interface{})
+	List(ctx context.Context, dir string, next interface{}, limit int, subCount bool, args ...interface{}) ([]BucketObject, interface{})
+
+	// Count retrieves a list of BucketObject from the specified directory and returns an additional result, typically used for metadata or supplementary information.
+	Count(ctx context.Context, dir string, args ...interface{}) int
 
 	// Del deletes an object by name from the storage.
 	Del(ctx context.Context, name string, args ...interface{}) error
@@ -56,7 +59,7 @@ type BucketUploader interface {
 	Rename(ctx context.Context, dest string, source string, args ...interface{}) error
 
 	// Tree lists the structure of objects within a directory up to a specified depth, optionally excluding leaves.
-	Tree(ctx context.Context, dir string, next interface{}, limit int, dep int, maxDep int, noleaf bool, args ...interface{}) []BucketTreeObject
+	Tree(ctx context.Context, dir string, next interface{}, limit int, dep int, maxDep int, noleaf bool, subCount bool, args ...interface{}) []BucketTreeObject
 
 	// Append appends data from an io.Reader to an existing object starting at the specified position.
 	Append(ctx context.Context, name string, position int, fd io.Reader, args ...interface{}) (int, error)
