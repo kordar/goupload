@@ -77,9 +77,13 @@ func (mgr *UploaderManager) List(bucketName string, dir string, next interface{}
 	return handler.List(ctx, dir, next, limit, subCount, args...)
 }
 
-func (mgr *UploaderManager) Count(ctx context.Context, dir string, args ...interface{}) ([]BucketObject, interface{}) {
-	//TODO implement me
-	panic("implement me")
+func (mgr *UploaderManager) Count(bucketName string, dir string, args ...interface{}) int {
+	handler := mgr.GetHandler(bucketName)
+	if handler == nil {
+		return 0
+	}
+	ctx := context.Background()
+	return handler.Count(ctx, dir, args...)
 }
 
 func (mgr *UploaderManager) Del(bucketName string, name string, args ...interface{}) error {

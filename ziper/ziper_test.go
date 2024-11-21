@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -58,4 +59,51 @@ func TestCreateZipWithReader2(t *testing.T) {
 
 func TestUnzip(t *testing.T) {
 	Unzip("/Users/mac/Pictures/bucket/test/AA/33.zip", "/Users/mac/Pictures/bucket/test/AA/target")
+}
+
+func TestUnzipWithReader(t *testing.T) {
+	open, _ := os.Open("/Users/mac/Pictures/bucket/test/33.zip")
+	defer open.Close()
+	all, _ := io.ReadAll(open)
+	UnzipWithBytes(all, "/Users/mac/Pictures/bucket/test/target")
+}
+
+func TestUnzipCallback(t *testing.T) {
+	UnzipCallback("/Users/mac/Pictures/bucket/test/33.zip", func(file *zip.File) {
+		log.Println("--------------", file.Name)
+	})
+}
+
+func TestUnzipCallbackWithBytes(t *testing.T) {
+	open, _ := os.Open("/Users/mac/Pictures/bucket/test/33.zip")
+	defer open.Close()
+	all, _ := io.ReadAll(open)
+	dest := "/Users/mac/Pictures/bucket/test/target"
+	UnzipCallbackWithBytes(all, func(file *zip.File) {
+		filename := filepath.Join(dest, file.Name)
+		if file.FileInfo().IsDir() {
+			_ = os.MkdirAll(filename, os.ModePerm)
+			return
+		}
+
+		if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
+			return
+		}
+
+		srcfile, err := file.Open()
+		defer srcfile.Close()
+		if err != nil {
+			return
+		}
+
+		// 创建目标文件
+		destfile, err := os.Create(filename)
+		defer destfile.Close()
+		if err != nil {
+			return
+		}
+
+		_, _ = io.Copy(destfile, srcfile)
+
+	})
 }
