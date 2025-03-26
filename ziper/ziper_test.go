@@ -58,7 +58,7 @@ func TestCreateZipWithReader2(t *testing.T) {
 }
 
 func TestUnzip(t *testing.T) {
-	Unzip("/Users/mac/Pictures/bucket/test/AA/33.zip", "/Users/mac/Pictures/bucket/test/AA/target")
+	Unzip("/Users/mac/Pictures/bucket/test/33.zip", "/Users/mac/Pictures/bucket/test/target")
 }
 
 func TestUnzipWithReader(t *testing.T) {
